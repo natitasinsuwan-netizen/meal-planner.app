@@ -34,13 +34,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Today",
-          tabBarIcon: ({ color, size }) => <Ionicons name="sunny-outline" color={color} size={size} />,
+          title: "Home",
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="random"
         options={{
+          href: null,
           title: "Randomize",
           tabBarIcon: ({ color, size }) => (
             <View style={styles.center}>

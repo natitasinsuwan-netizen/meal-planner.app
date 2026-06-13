@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/src/components/Button";
@@ -65,27 +66,37 @@ export default function Onboarding() {
   const steps = [
     {
       key: "purpose",
-      title: "What's your goal?",
-      sub: "Pick one — you can change it anytime.",
+      title: "What's Your Purpose?",
+      sub: "Choose how you want to use this app",
       render: () => (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: 14 }}>
           <Pressable
             testID="onb-purpose-random"
             onPress={() => setPurpose("random")}
             style={[styles.purposeCard, purpose === "random" && styles.purposeCardActive]}
           >
-            <Text style={[styles.purposeEmoji]}>🎲</Text>
-            <Text style={styles.purposeTitle}>Random meal</Text>
-            <Text style={styles.purposeBody}>I just want delicious ideas, anytime.</Text>
+            <View style={[styles.purposeIcon, { backgroundColor: "#F4A024" }]}>
+              <Ionicons name="shuffle" size={28} color="#fff" />
+            </View>
+            <Text style={styles.purposeTitle}>Random Meal</Text>
+            <Text style={styles.purposeBody}>
+              Get random meal suggestions based on your preferences. Perfect for when you can&apos;t decide what to eat and want variety in your diet.
+            </Text>
+            <Text style={[styles.purposeCta, { color: "#F4A024" }]}>Explore meals  →</Text>
           </Pressable>
           <Pressable
             testID="onb-purpose-diet"
             onPress={() => setPurpose("diet")}
             style={[styles.purposeCard, purpose === "diet" && styles.purposeCardActive]}
           >
-            <Text style={[styles.purposeEmoji]}>🥗</Text>
-            <Text style={styles.purposeTitle}>Diet mode</Text>
-            <Text style={styles.purposeBody}>-400 kcal target · low-fat, high-nutrient picks only.</Text>
+            <View style={[styles.purposeIcon, { backgroundColor: "#2EAF4F" }]}>
+              <Ionicons name="locate" size={28} color="#fff" />
+            </View>
+            <Text style={styles.purposeTitle}>Diet Planning</Text>
+            <Text style={styles.purposeBody}>
+              Plan your meals while tracking your daily calorie intake. Ideal for weight management and achieving your fitness goals.
+            </Text>
+            <Text style={[styles.purposeCta, { color: "#2EAF4F" }]}>Start planning  →</Text>
           </Pressable>
         </View>
       ),
@@ -326,16 +337,20 @@ const styles = StyleSheet.create({
   exLabel: { fontSize: 10, color: COLORS.muted, marginTop: 2 },
   exLabelActive: { color: "#fff" },
   purposeCard: {
-    padding: 20,
+    padding: 22,
     borderRadius: RADIUS.xl,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.border,
-    backgroundColor: "#FAF8F3",
-    gap: 6,
+    backgroundColor: COLORS.surface,
+    alignItems: "center",
+    gap: 10,
   },
-  purposeCardActive: { borderColor: COLORS.primary, backgroundColor: "#FFF1EC" },
-  purposeEmoji: { fontSize: 32 },
-  purposeTitle: { fontSize: 20, fontWeight: "800", color: COLORS.text },
-  purposeBody: { color: COLORS.muted },
+  purposeCardActive: { borderColor: COLORS.text },
+  purposeIcon: {
+    width: 56, height: 56, borderRadius: 999, alignItems: "center", justifyContent: "center",
+  },
+  purposeTitle: { fontSize: 22, fontWeight: "900", color: COLORS.text, letterSpacing: -0.5 },
+  purposeBody: { color: COLORS.textSoft, textAlign: "center", lineHeight: 21, fontSize: 14 },
+  purposeCta: { fontWeight: "800", marginTop: 4 },
   actions: { flexDirection: "row", gap: 12, marginTop: 24 },
 });

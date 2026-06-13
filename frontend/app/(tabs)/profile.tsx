@@ -79,12 +79,16 @@ export default function ProfileScreen() {
         <View style={[styles.panel, SHADOW.soft, { marginTop: 18 }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <View>
-              <Text style={styles.label}>DAILY CALORIE TARGET</Text>
-              <Text style={styles.big}>{me?.daily_calorie_adjusted || me?.daily_calorie_target || "—"}</Text>
+              <Text style={styles.label}>{purpose === "diet" ? "DIET TARGET (−400)" : "DAILY CALORIE TARGET"}</Text>
+              <Text style={styles.big}>{(() => {
+                const tdee = me?.daily_calorie_target || 0;
+                if (!tdee) return "—";
+                return purpose === "diet" ? tdee - 400 : tdee;
+              })()}</Text>
               <Text style={styles.muted}>
-                {me?.daily_calorie_target && purpose === "diet"
-                  ? `${me.daily_calorie_target} TDEE · −400 diet`
-                  : "TDEE (Mifflin–St Jeor)"}
+                {me?.daily_calorie_target
+                  ? `${me.daily_calorie_target} TDEE · Mifflin–St Jeor`
+                  : "Save profile to compute"}
               </Text>
             </View>
           </View>

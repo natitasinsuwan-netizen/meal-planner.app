@@ -1,0 +1,101 @@
+{
+  "project_name": "MealRandom",
+  "theme": "Light",
+  "archetype": "1 (Organic & Earthy)",
+  "emotional_tone": "Warm, appetizing, encouraging, low-friction, and tactile.",
+  "global_rules": {
+    "mobile_first": "Design specifically for mobile viewports (use max-w-md mx-auto if rendering on desktop web).",
+    "accessibility": "Ensure text contrast (APCA compliant), hit targets >= 44px, respect prefers-reduced-motion.",
+    "data_testid": "MANDATORY: Add data-testid attribute to all interactive elements (buttons, links, form inputs, toggles, chips)."
+  },
+  "typography": {
+    "strategy": "High-end health app. Break standard SaaS look. Avoid Inter.",
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "scale": {
+      "h1": "text-4xl tracking-tighter leading-tight font-black",
+      "h2": "text-3xl tracking-tight font-bold",
+      "h3": "text-xl font-semibold",
+      "body": "text-base leading-relaxed text-[#3D405B]",
+      "labels": "text-xs tracking-[0.2em] uppercase font-bold text-[#8D93AB]"
+    }
+  },
+  "colors": {
+    "background_base": "#FDFBF7",
+    "surface": "#FFFFFF",
+    "primary": "#E07A5F",
+    "primary_hover": "#F28C71",
+    "primary_text": "#FFFFFF",
+    "secondary": "#81B29A",
+    "text_main": "#3D405B",
+    "text_muted": "#8D93AB",
+    "border": "#EBE8E0",
+    "success": "#81B29A",
+    "warning": "#F4A261",
+    "diet_accent": "#E07A5F",
+    "random_accent": "#E9C46A"
+  },
+  "spacing_and_layout": {
+    "padding": "Generous. Use p-6 or p-8 for main containers and screen padding.",
+    "border_radius": "rounded-3xl for main bento cards, rounded-full for chips/buttons. No sharp corners.",
+    "shadows": "Soft, diffuse ambient shadows. shadow-[0_8px_30px_rgba(61,64,91,0.06)]",
+    "grid": "Bento layout for dashboard widgets. Flexbox with gap-4 for vertical lists."
+  },
+  "components": {
+    "buttons": "Shadcn based but fully customized. Full width for primary actions. rounded-full, h-14 for mobile fat finger rule.",
+    "cards": "Soft-surface approach with 1px subtle borders (border-[#EBE8E0]). Background #FFFFFF.",
+    "chips": "Used for filters (Countries, Cooking Methods, Carbs, Protein). rounded-full border border-[#EBE8E0] px-4 py-2 text-sm. Active state: bg-[#3D405B] text-white border-[#3D405B].",
+    "forms": "Large touch targets. Shadcn inputs with h-14, rounded-2xl. No generic HTML inputs.",
+    "bottom_nav": "Fixed bottom, glassmorphism backdrop-blur-xl bg-white/80, 1px top border. Saturate 150%."
+  },
+  "screens": {
+    "onboarding": "One question per screen flow. Large typography, minimal cognitive load. Easy tap choices for dietary prefs. No dense forms.",
+    "home_dashboard": "Greeting + Today's Calorie summary widget (bento style, clearly showing consumed vs remaining). Massive 'Randomize Meal' primary CTA button. List of today's selected meals.",
+    "meal_result_card": "Hero image max-h-[45vh] covering top of screen, bottom gradient overlay (bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/80 to-transparent) to blend into content. Large meal name, calories big and bold, keyword chips underneath. 'Re-roll' secondary button, 'Add to Today' primary button.",
+    "keyword_filter": "Full-screen or bottom sheet with grouped, horizontally wrapping chip selections.",
+    "profile": "Clean list of editable body stats, preferences, allergies, and the Purpose toggle (Random vs Diet)."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Hover states must lift (-translate-y-1) and increase shadow slightly.",
+    "tap_states": "Scale down slightly (active:scale-95) to feel tactile.",
+    "page_transitions": "Smooth fade and slide-up for mobile feel."
+  },
+  "icons": "lucide-react. Stroke-width 1.5. Rounded and friendly.",
+  "media": {
+    "meal_images": [
+      {
+        "url": "https://images.unsplash.com/photo-1604259597308-5321e8e4789c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwdGhhaSUyMGZvb2QlMjBib3dsfGVufDB8fHx8MTc4MTM0MjkwOXww&ixlib=rb-4.1.0&q=85",
+        "category": "meal_result_hero",
+        "description": "Healthy Thai food bowl (cucumber and salmon)"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1547496502-affa22d38842?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwyfHxoZWFsdGh5JTIwdGhhaSUyMGZvb2QlMjBib3dsfGVufDB8fHx8MTc4MTM0MjkwOXww&ixlib=rb-4.1.0&q=85",
+        "category": "meal_result_hero",
+        "description": "Vegetable salad bowl"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1543352632-5a4b24e4d2a6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGRpZXQlMjBtZWFsJTIwcHJlcHxlbnwwfHx8fDE3ODEzNDI5MDl8MA&ixlib=rb-4.1.0&q=85",
+        "category": "meal_history_thumbnail",
+        "description": "Fresh diet meal prep"
+      }
+    ],
+    "backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1644340271490-c115f7aacfb3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHwyfHxhcHBldGl6aW5nJTIwZm9vZCUyMHRleHR1cmUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4MTM0MjkwOXww&ixlib=rb-4.1.0&q=85",
+        "category": "onboarding_texture",
+        "description": "Appetizing soft texture for onboarding background overlay (use at low opacity like 5-10%)"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "You MUST build this as a mobile-first web app view (max-w-md mx-auto, min-h-screen, mobile bottom nav) mimicking a React Native app but using React JS, Tailwind, and Shadcn UI.",
+    "Do NOT use .tsx files. Use .js and .jsx exclusively as requested.",
+    "Inject the 'Outfit' and 'Manrope' fonts via Google Fonts in index.html and configure Tailwind to use them.",
+    "Do not use generic clinical blue or teal. Stick strictly to the warm Organic & Earthy palette defined in colors.",
+    "Ensure every interactive element (button, link, toggle, chip, input) has a distinct data-testid.",
+    "On the Home Screen, make the Calorie Summary visually prominent, clearly showing the 400 calorie subtraction if 'Diet' mode is selected.",
+    "For the Filter Keyword Screen, ensure the chips are highly tactile with clear visual distinction between selected and unselected states.",
+    "Avoid Shadcn's default Vercel-like square aesthetics. Override Card and Button border radii to rounded-3xl and rounded-full respectively.",
+    "Meal images must not be stretched. Use object-cover and mask the bottom of hero images smoothly into the app background."
+  ]
+}

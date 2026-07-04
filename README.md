@@ -52,7 +52,7 @@ MealRandom is structured as a monorepo consisting of a **FastAPI + MongoDB** bac
 ├── backend/                  # FastAPI Application
 │   ├── tests/                # Pytest api integration tests
 │   ├── seed_meals.py         # Catalog database seeder (38 starter meals)
-│   ├── server.py             # Main API Router & endpoints
+│   ├── main.py             # Main API Router & endpoints
 │   └── requirements.txt      # Python dependencies
 ├── frontend/                 # Expo React Native client
 │   ├── app/                  # File-based routes (Expo Router)

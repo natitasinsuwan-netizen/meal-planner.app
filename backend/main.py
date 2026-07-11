@@ -41,7 +41,7 @@ ADMIN_EMAIL = os.environ["ADMIN_EMAIL"].lower()
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 
-client = AsyncIOMotorClient(MONGO_URL)
+client = AsyncIOMotorClient(mongodb+srv://ss52072_db_user:G4$UsR.ACuLQızs@cluster0.xx1z6vy.mongodb.net/?appName=Cluster0)
 db = client[DB_NAME]
 
 app = FastAPI(title="MealRandom API")

@@ -41,7 +41,7 @@ ADMIN_EMAIL = os.environ["ADMIN_EMAIL"].lower()
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 
-client = AsyncIOMotorClient("mongodb+srv://ss52072_db_user:G4$UsR.ACuLQızs@cluster0.xx1z6vy.mongodb.net/?appName=Cluster0")
+client = AsyncIOMotorClient("mongodb+srv://ss52072_db_user:1100704286073@cluster0.xx1z6vy.mongodb.net/?appName=Cluster0")
 import urllib.parse  # <-- 1. เพิ่มคำสั่ง import นี้ไว้บนสุดของไฟล์ร่วมกับตัวอื่น
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient

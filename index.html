@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal • Random — Smart Meal Planner</title>
+  <meta name="description" content="A warm pastel mobile meal planner & randomizer web application to manage your daily energy intake and discover recipes.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Viewport Simulator -->
+  <div class="app-viewport">
+
+    <!-- Scrollable Main Content -->
+    <div class="main-content" style="padding-top: 24px;">
+
+      <!-- ==================== SCREEN 1: LOGIN ==================== -->
+      <div id="screenLogin" class="screen active">
+        <div class="welcome-header">
+          <div class="sub-tag">MEAL • RANDOM</div>
+          <h1 class="welcome-title">Welcome back.</h1>
+          <div class="welcome-subtitle">Sign in to plan today's meals.</div>
+        </div>
+
+        <div class="white-card">
+          <form id="formLogin">
+            <div class="form-group">
+              <label class="input-label">EMAIL</label>
+              <input type="email" id="loginEmail" class="text-input" placeholder="you@example.com" value="" required />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label class="input-label">PASSWORD</label>
+              <input type="password" class="text-input" value="" placeholder="••••••••" required />
+            </div>
+
+            <button type="submit" class="btn-orange">Sign in</button>
+          </form>
+        </div>
+
+        <div style="text-align: center; font-size: 0.9rem; color: #888888;">
+          New here? <a href="#" id="btnCreateAccount" style="color: var(--orange-primary); font-weight: 700; text-decoration: none;">Create an account</a>
+        </div>
+      </div>
+
+      <!-- ==================== SCREEN 2: ONBOARDING ==================== -->
+      <div id="screenOnboarding" class="screen">
+        <div class="welcome-header">
+          <div class="sub-tag">STEP 2 OF 2</div>
+          <h1 class="welcome-title">Your Profile</h1>
+          <div class="welcome-subtitle">Enter your birthday & body metrics to calculate daily calories.</div>
+        </div>
+
+        <div class="white-card">
+          <form id="formOnboarding">
+            <div class="form-group">
+              <label class="input-label">BIOLOGICAL SEX</label>
+              <select id="onbSex" class="text-input">
+                <option value="female" selected>Female</option>
+                <option value="male">Male</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">BIRTHDAY (DATE OF BIRTH)</label>
+              <input type="date" id="onbBirthday" class="text-input" value="2011-05-15" required />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" class="form-group">
+              <div>
+                <label class="input-label">WEIGHT (KG)</label>
+                <input type="number" id="onbWeight" class="text-input" value="45" step="0.1" required />
+              </div>
+              <div>
+                <label class="input-label">HEIGHT (CM)</label>
+                <input type="number" id="onbHeight" class="text-input" value="157" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">EXERCISE / WEEK</label>
+              <div class="number-grid" id="onboardingExerciseGrid"></div>
+            </div>
+
+            <button type="submit" class="btn-orange" style="margin-top: 10px;">Continue to Dashboard →</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==================== SCREEN 3: HOME DASHBOARD ==================== -->
+      <div id="screenHome" class="screen">
+        
+        <!-- Admin Role Notification Badge -->
+        <div id="adminRoleBadge" style="display:none; background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 10px 16px; border-radius: 16px; font-weight: 800; font-size: 0.85rem; margin-bottom: 14px; text-align: center;">
+          🛡️ Logged in as Admin
+        </div>
+
+        <!-- Header Profile Card -->
+        <div class="white-card" style="padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.4rem;">🏠</span>
+              <h2 style="font-size: 1.3rem; font-weight: 900; letter-spacing: -0.02em;">Random Meal Generator</h2>
+            </div>
+            <div id="userSubtitle" style="font-size: 0.85rem; color: #888888; font-weight: 600; margin-top: 4px;">Female, 15 years, 45kg, 157cm</div>
+          </div>
+
+          <button id="btnEditProfile" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: var(--radius-pill); padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <span>👤</span> Edit Profile
+          </button>
+        </div>
+
+        <!-- Bento Calorie Tracker Cards -->
+        <div class="bento-card bento-blue">
+          <div class="bento-title">Daily Energy Need</div>
+          <div class="bento-value" style="color: var(--blue-text);" id="valNeed">1643</div>
+          <div class="bento-unit">calories/day</div>
+        </div>
+
+        <div class="bento-card bento-peach">
+          <div class="bento-title">Consumed Today</div>
+          <div class="bento-value" style="color: var(--peach-text);" id="valConsumed">0</div>
+          <div class="bento-unit">calories</div>
+        </div>
+
+        <div class="bento-card bento-mint">
+          <div class="bento-title">Remaining</div>
+          <div class="bento-value" style="color: var(--mint-text);" id="valRemaining">1643</div>
+          <div class="bento-unit">calories</div>
+        </div>
+
+        <!-- Filter by Keywords Card -->
+        <div class="white-card">
+          <h3 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 8px;">Filter by Keywords</h3>
+          <div id="keywordChipsContainer"></div>
+        </div>
+
+        <!-- Your Meal Card -->
+        <div class="white-card" id="yourMealBox">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em;">Your Meal</h3>
+            <button id="btnRandomMeal" class="btn-orange" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">🔀 Random Meal</button>
+          </div>
+
+          <div style="text-align: center; padding: 24px 0; color: #888888;">
+            <div style="font-size: 2.5rem; opacity: 0.4; margin-bottom: 8px;">🔀</div>
+            <div style="font-size: 0.9rem; font-weight: 500;">Click "Random Meal" to get a suggestion</div>
+          </div>
+        </div>
+
+        <!-- Today's Meals Card -->
+        <div class="white-card">
+          <h3 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 14px;">Today's Meals</h3>
+          <div id="todayMealsContainer">
+            <div style="text-align: center; padding: 20px 0; color: #888888;">
+              <div style="font-weight: 800; font-size: 1.05rem; color: #111827; margin-bottom: 4px;">No meals added yet</div>
+              <div style="font-size: 0.85rem;">Add meals to track your daily intake</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== SCREEN 4: ADMIN MENU MANAGER ==================== -->
+      <div id="screenAdmin" class="screen">
+        <div class="welcome-header" style="margin-top: 10px;">
+          <div class="sub-tag">ADMIN CONTROL PANEL</div>
+          <h1 class="welcome-title">Menu Management</h1>
+          <div class="welcome-subtitle">Edit menu recipes, add new dishes, or delete catalog items.</div>
+        </div>
+
+        <!-- Add New Meal Card -->
+        <div class="white-card">
+          <h3 style="font-size: 1.15rem; font-weight: 900; margin-bottom: 14px;">➕ Add New Meal to Menu</h3>
+          <form id="formAdminAddMeal">
+            <div class="form-group">
+              <label class="input-label">RECIPE NAME</label>
+              <input type="text" id="addMealName" class="text-input" placeholder="e.g. Som Tum Thai Supreme" required />
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">DESCRIPTION</label>
+              <input type="text" id="addMealDesc" class="text-input" placeholder="Spicy shredded green papaya salad..." required />
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">IMAGE URL (UNSPLASH / WEB PHOTO)</label>
+              <input type="url" id="addMealImg" class="text-input" placeholder="https://images.unsplash.com/..." />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;" class="form-group">
+              <div>
+                <label class="input-label">CALORIES</label>
+                <input type="number" id="addMealCal" class="text-input" placeholder="350" required />
+              </div>
+              <div>
+                <label class="input-label">PROTEIN</label>
+                <input type="number" id="addMealProt" class="text-input" placeholder="25" required />
+              </div>
+              <div>
+                <label class="input-label">FAT (G)</label>
+                <input type="number" id="addMealFat" class="text-input" placeholder="10" required />
+              </div>
+              <div>
+                <label class="input-label">CARBS (G)</label>
+                <input type="number" id="addMealCarb" class="text-input" placeholder="40" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-orange">✨ Publish Recipe to Menu</button>
+          </form>
+        </div>
+
+        <!-- Menu Catalog List Card -->
+        <div class="white-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="font-size: 1.15rem; font-weight: 900;">🍽️ Menu Catalog (38 Recipes)</h3>
+          </div>
+          <input type="text" id="adminSearchInput" class="text-input" placeholder="Search menu dish or ingredient..." style="margin-bottom: 16px;" />
+          <div id="adminCatalogContainer"></div>
+        </div>
+
+      </div>
+
+      <!-- ==================== SCREEN 5: PROFILE SETTINGS (EDIT HEIGHT & WEIGHT) ==================== -->
+      <div id="screenProfile" class="screen">
+        
+        <!-- Biological Sex Selection -->
+        <div class="white-card">
+          <label class="input-label">BIOLOGICAL SEX</label>
+          <select id="profSex" class="text-input">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+
+        <!-- Birthday Date Input -->
+        <div class="white-card">
+          <label class="input-label">BIRTHDAY (DATE OF BIRTH)</label>
+          <input type="date" id="profBirthday" class="text-input" value="2011-05-15" />
+        </div>
+
+        <!-- Editable Weight & Height Fields -->
+        <div class="white-card">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label class="input-label">WEIGHT (KG)</label>
+              <input type="number" id="profWeight" class="text-input" value="45" step="0.1" required />
+            </div>
+            <div>
+              <label class="input-label">HEIGHT (CM)</label>
+              <input type="number" id="profHeight" class="text-input" value="157" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Exercise / Week Card -->
+        <div class="white-card">
+          <div class="input-label">EXERCISE / WEEK</div>
+          <div class="number-grid" id="exerciseNumGrid"></div>
+        </div>
+
+        <!-- Dietary Preferences Card -->
+        <div class="white-card">
+          <h3 style="font-size: 0.85rem; font-weight: 800; color: #111827; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px;">DIETARY PREFERENCES</h3>
+          <div class="chip-flex" id="dietaryChipsContainer"></div>
+        </div>
+
+        <!-- Allergies Card -->
+        <div class="white-card">
+          <h3 style="font-size: 0.85rem; font-weight: 800; color: #111827; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px;">ALLERGIES</h3>
+          <div class="chip-flex" id="allergyChipsContainer"></div>
+        </div>
+
+        <button id="btnSaveProfile" class="btn-orange" style="margin-bottom: 14px;">Save changes</button>
+        <button id="btnSignOut" class="btn-white-pill">Sign out</button>
+
+      </div>
+
+    </div>
+
+    <!-- Fixed Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottomNav" style="display: none;">
+      <button class="nav-item active" id="navHome">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" id="navAdmin" style="display: none;">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 6c1.4 0 2.8 1.1 2.8 2.5 0 1.9-2.8 4.5-2.8 4.5s-2.8-2.6-2.8-4.5c0-1.4 1.4-2.5 2.8-2.5z"/></svg>
+        <span>Admin Menu</span>
+      </button>
+      <button class="nav-item" id="navProfile">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Profile</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Admin Edit Recipe Modal Popup -->
+  <div id="modalEditMeal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); z-index:2000; justify-content:center; align-items:center;">
+    <div class="white-card" style="width:90%; max-width:440px; max-height:90vh; overflow-y:auto; position:relative;">
+      <button id="btnCloseEditModal" style="position:absolute; top:18px; right:18px; background:none; border:none; font-size:1.2rem; cursor:pointer;">✕</button>
+      <h3 style="font-size:1.3rem; font-weight:900; margin-bottom:16px;">✏️ Edit Recipe Details</h3>
+
+      <form id="formAdminEditMeal">
+        <div class="form-group">
+          <label class="input-label">RECIPE NAME</label>
+          <input type="text" id="editMealName" class="text-input" required />
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">DESCRIPTION</label>
+          <input type="text" id="editMealDesc" class="text-input" required />
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">IMAGE URL</label>
+          <input type="url" id="editMealImg" class="text-input" required />
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" class="form-group">
+          <div>
+            <label class="input-label">CALORIES (KCAL)</label>
+            <input type="number" id="editMealCal" class="text-input" required />
+          </div>
+          <div>
+            <label class="input-label">PROTEIN (G)</label>
+            <input type="number" id="editMealProt" class="text-input" required />
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" class="form-group">
+          <div>
+            <label class="input-label">FAT (G)</label>
+            <input type="number" id="editMealFat" class="text-input" required />
+          </div>
+          <div>
+            <label class="input-label">CARBS (G)</label>
+            <input type="number" id="editMealCarb" class="text-input" required />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-orange" style="margin-top:10px;">💾 Save Recipe Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="meals_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,36 +1,74 @@
-// Application Flow & User State
-let isLoggedIn = false;
-let isOnboarded = localStorage.getItem('mp_onboarded') === 'true';
-let activeTab = 'home';
+// Application State & User Storage
+let isLoggedIn = localStorage.getItem('mp_is_logged_in') === 'true';
+let hasCompletedProfile = localStorage.getItem('mp_has_profile') === 'true';
+let mode = localStorage.getItem('mp_app_mode') || null; // 'random' or 'diet'
+let activeTab = 'home'; // 'home' or 'profile'
+let currentUserEmail = localStorage.getItem('mp_user_email') || '';
 
-let currentUser = JSON.parse(localStorage.getItem('mp_user') || JSON.stringify({
-  email: '',
-  isAdmin: false
-}));
+const ADMIN_EMAIL = "natitasinsuwan@gmail.com";
+
+function isAdmin() {
+  return currentUserEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
 
 let profile = JSON.parse(localStorage.getItem('mp_user_profile') || JSON.stringify({
-  sex: 'female',
-  birthday: '2011-05-15',
   weight: 45,
-  height: 157,
-  exercise_week: 2,
-  dietary: ['Vegetarian'],
-  allergies: ['Nuts']
+  height: 160,
+  birthday: '2010-05-15',
+  sex: 'female',
+  exercise: 0,
+  allergies: [],
+  religious: [],
+  ethical: []
 }));
 
-let activeKeywords = {
-  countries: [],
-  cooking_methods: [],
-  carbs: [],
-  protein: []
+let selectedKeywords = new Set();
+let todayMeals = [];
+
+// Load stored custom meals into INITIAL_MEALS
+const customMeals = JSON.parse(localStorage.getItem('mp_custom_meals') || '[]');
+if (customMeals.length > 0) {
+  INITIAL_MEALS = [...INITIAL_MEALS, ...customMeals];
+}
+
+// Helper: Get Today's Date String (YYYY-MM-DD)
+function getTodayDateString() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+// Automatic Daily Reset Check
+function checkAndResetNewDay() {
+  const lastDate = localStorage.getItem('mp_last_date');
+  const todayStr = getTodayDateString();
+
+  if (lastDate !== todayStr) {
+    todayMeals = [];
+    localStorage.setItem('mp_today_meals', JSON.stringify([]));
+    localStorage.setItem('mp_last_date', todayStr);
+  } else {
+    todayMeals = JSON.parse(localStorage.getItem('mp_today_meals') || '[]');
+  }
+}
+
+// EXACT REQUESTED KEYWORD CATEGORIES
+const CATEGORIZED_KEYWORDS = {
+  "Country": ["Thai", "Japanese", "Chinese", "Indian", "Vietnamese", "Laos", "Lebanon", "Mexican", "Italian", "French", "Spanish", "American", "British", "German"],
+  "Cooking Methods": ["Fry", "Boil", "Grill", "Bake", "Steam", "Stir-Fry", "Stew", "Smoke"],
+  "Carbs": ["Noodles", "Rice", "Bread", "Pasta", "Low-Carb"],
+  "Protein": ["Chicken", "Egg", "Pork", "Beef", "Fish", "Seafood", "Tofu"]
 };
 
-let todayMeals = JSON.parse(localStorage.getItem('mp_today_meals') || '[]');
-let editingMealId = null;
+// Dietary Restriction Options
+const DIETARY_OPTIONS = {
+  allergies: ["Peanut", "Tree Nuts", "Dairy / Lactose", "Gluten", "Shellfish", "Egg", "Soy", "Fish", "Sesame"],
+  religious: ["Halal", "Kosher", "Buddhist Vegetarian", "Hindu Vegetarian"],
+  ethical: ["Vegan", "Vegetarian", "Pescatarian", "Keto / Low-Carb", "Paleo", "Dairy-Free"]
+};
 
 // Calculate Age dynamically from Birthday
 function getAgeFromBirthday(birthdayStr) {
-  if (!birthdayStr) return 15;
+  if (!birthdayStr) return 14;
   const birthDate = new Date(birthdayStr);
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -41,277 +79,436 @@ function getAgeFromBirthday(birthdayStr) {
   return Math.max(1, age);
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  setupNavigation();
-  renderApp();
-
-  // Step 1: Login Form
-  document.getElementById('formLogin').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-    
-    const isAdmin = (email === 'natitasinsuwan@gmail.com' || email === 'natitasinsuwan@gmail.coom' || email.includes('admin'));
-    
-    currentUser = {
-      email: email,
-      isAdmin: isAdmin
-    };
-    
-    localStorage.setItem('mp_user', JSON.stringify(currentUser));
-    isLoggedIn = true;
-
-    if (!isOnboarded) {
-      renderApp('onboarding');
-    } else {
-      renderApp('home');
-    }
-  });
-
-  // Create an Account Link
-  document.getElementById('btnCreateAccount').addEventListener('click', (e) => {
-    e.preventDefault();
-    isLoggedIn = true;
-    renderApp('onboarding');
-  });
-
-  // Step 2: Onboarding Form
-  document.getElementById('formOnboarding').addEventListener('submit', (e) => {
-    e.preventDefault();
-    profile.sex = document.getElementById('onbSex').value;
-    profile.birthday = document.getElementById('onbBirthday').value || '2011-05-15';
-    profile.weight = parseFloat(document.getElementById('onbWeight').value) || 45;
-    profile.height = parseFloat(document.getElementById('onbHeight').value) || 157;
-    
-    isOnboarded = true;
-    localStorage.setItem('mp_onboarded', 'true');
-    localStorage.setItem('mp_user_profile', JSON.stringify(profile));
-
-    renderApp('home');
-  });
-
-  // Admin Add New Meal Form
-  document.getElementById('formAdminAddMeal').addEventListener('submit', handleAddMeal);
-
-  // Admin Edit Meal Form Modal
-  document.getElementById('formAdminEditMeal').addEventListener('submit', handleSaveEditedMeal);
-  document.getElementById('btnCloseEditModal').addEventListener('click', closeEditModal);
-
-  // Profile Save Changes
-  document.getElementById('btnSaveProfile').addEventListener('click', saveProfileChanges);
-
-  // Sign Out
-  document.getElementById('btnSignOut').addEventListener('click', () => {
-    isLoggedIn = false;
-    isOnboarded = false;
-    localStorage.removeItem('mp_onboarded');
-    localStorage.removeItem('mp_user');
-    currentUser = { email: '', isAdmin: false };
-    renderApp('login');
-  });
-
-  // Edit Profile Button
-  document.getElementById('btnEditProfile').addEventListener('click', () => {
-    switchTab('profile');
-  });
-
-  // Random Meal Button
-  document.getElementById('btnRandomMeal').addEventListener('click', rollRandomMeal);
-
-  renderKeywordsChips();
-  renderProfileChips();
-  renderOnboardingExerciseGrid();
-});
-
 // Calculate TDEE
 function calculateTDEE() {
   const age = getAgeFromBirthday(profile.birthday);
-  const { sex, weight, height, exercise_week } = profile;
-  
+  const weight = parseFloat(profile.weight) || 45;
+  const height = parseFloat(profile.height) || 160;
+  const sex = profile.sex || 'female';
+  const exercise = parseInt(profile.exercise) || 0;
+
   let bmr = (10 * weight) + (6.25 * height) - (5 * age);
   bmr = sex === 'male' ? bmr + 5 : bmr - 161;
 
-  const activityFactors = {
-    0: 1.2, 1: 1.3, 2: 1.375, 3: 1.46, 4: 1.55, 5: 1.65, 6: 1.725, 7: 1.9
-  };
-
-  const factor = activityFactors[exercise_week] || 1.375;
+  const activityFactors = { 0: 1.2, 2: 1.375, 4: 1.55, 6: 1.725 };
+  const factor = activityFactors[exercise] || 1.2;
   return Math.round(bmr * factor);
 }
 
-// Navigation Controls
-function setupNavigation() {
-  document.getElementById('navHome').addEventListener('click', () => switchTab('home'));
-  document.getElementById('navAdmin').addEventListener('click', () => switchTab('admin'));
-  document.getElementById('navProfile').addEventListener('click', () => switchTab('profile'));
+// DOM Initialization
+document.addEventListener('DOMContentLoaded', () => {
+  checkAndResetNewDay();
+  setupEventListeners();
+  setupBottomNav();
+  setupAdminModal();
+  renderCategorizedKeywords();
+  renderProfileRestrictionChips();
+
+  // FLOW LOGIC:
+  if (!isLoggedIn) {
+    showScreen('screenLogin');
+  } else if (!hasCompletedProfile) {
+    showScreen('screenProfileForm');
+  } else if (!mode) {
+    showScreen('screenPurpose');
+  } else {
+    renderDashboard();
+    showScreen('screenDashboard');
+  }
+});
+
+function setupBottomNav() {
+  const tabHome = document.getElementById('tabNavHome');
+  const tabProfile = document.getElementById('tabNavProfile');
+
+  if (tabHome) {
+    tabHome.addEventListener('click', () => {
+      activeTab = 'home';
+      tabHome.classList.add('active');
+      tabProfile.classList.remove('active');
+      renderDashboard();
+      showScreen('screenDashboard');
+    });
+  }
+
+  if (tabProfile) {
+    tabProfile.addEventListener('click', () => {
+      activeTab = 'profile';
+      tabProfile.classList.add('active');
+      tabHome.classList.remove('active');
+      document.getElementById('inputWeight').value = profile.weight;
+      document.getElementById('inputHeight').value = profile.height;
+      document.getElementById('inputBirthday').value = profile.birthday;
+      document.getElementById('selectSex').value = profile.sex;
+      document.getElementById('selectExercise').value = profile.exercise;
+      renderProfileRestrictionChips();
+      showScreen('screenProfileForm');
+    });
+  }
 }
 
-function switchTab(tab) {
-  activeTab = tab;
-  renderApp(tab);
+function setupEventListeners() {
+  // Screen 1: Login Submit
+  document.getElementById('formLogin').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentUserEmail = document.getElementById('loginEmail').value.trim() || 'user@example.com';
+    isLoggedIn = true;
+    localStorage.setItem('mp_is_logged_in', 'true');
+    localStorage.setItem('mp_user_email', currentUserEmail);
+
+    if (!hasCompletedProfile) {
+      showScreen('screenProfileForm');
+    } else if (!mode) {
+      showScreen('screenPurpose');
+    } else {
+      renderDashboard();
+      showScreen('screenDashboard');
+    }
+  });
+
+  // Create Account Link
+  document.getElementById('btnCreateAccount').addEventListener('click', (e) => {
+    e.preventDefault();
+    currentUserEmail = 'natitasinsuwan@gmail.com'; // Default shortcut for user testing
+    isLoggedIn = true;
+    localStorage.setItem('mp_is_logged_in', 'true');
+    localStorage.setItem('mp_user_email', currentUserEmail);
+    showScreen('screenProfileForm');
+  });
+
+  // Screen 2: Profile Form Submit
+  document.getElementById('formProfileInputs').addEventListener('submit', (e) => {
+    e.preventDefault();
+    profile.weight = parseFloat(document.getElementById('inputWeight').value) || 45;
+    profile.height = parseFloat(document.getElementById('inputHeight').value) || 160;
+    profile.birthday = document.getElementById('inputBirthday').value || '2010-05-15';
+    profile.sex = document.getElementById('selectSex').value;
+    profile.exercise = parseInt(document.getElementById('selectExercise').value) || 0;
+
+    hasCompletedProfile = true;
+    localStorage.setItem('mp_has_profile', 'true');
+    localStorage.setItem('mp_user_profile', JSON.stringify(profile));
+
+    if (!mode) {
+      showScreen('screenPurpose');
+    } else {
+      activeTab = 'home';
+      document.getElementById('tabNavHome').classList.add('active');
+      document.getElementById('tabNavProfile').classList.remove('active');
+      renderDashboard();
+      showScreen('screenDashboard');
+    }
+  });
+
+  // Sign Out from Profile
+  const btnSignOut = document.getElementById('btnSignOutProfile');
+  if (btnSignOut) {
+    btnSignOut.addEventListener('click', () => {
+      isLoggedIn = false;
+      localStorage.setItem('mp_is_logged_in', 'false');
+      showScreen('screenLogin');
+    });
+  }
+
+  // Screen 3: Purpose Options
+  document.getElementById('btnChooseRandom').addEventListener('click', (e) => {
+    e.preventDefault();
+    mode = 'random';
+    localStorage.setItem('mp_app_mode', 'random');
+    renderDashboard();
+    showScreen('screenDashboard');
+  });
+
+  document.getElementById('btnChooseDiet').addEventListener('click', (e) => {
+    e.preventDefault();
+    mode = 'diet';
+    localStorage.setItem('mp_app_mode', 'diet');
+    renderDashboard();
+    showScreen('screenDashboard');
+  });
+
+  // Dashboard: Edit Profile Button
+  document.getElementById('btnEditProfile').addEventListener('click', () => {
+    activeTab = 'profile';
+    document.getElementById('tabNavProfile').classList.add('active');
+    document.getElementById('tabNavHome').classList.remove('active');
+    document.getElementById('inputWeight').value = profile.weight;
+    document.getElementById('inputHeight').value = profile.height;
+    document.getElementById('inputBirthday').value = profile.birthday;
+    document.getElementById('selectSex').value = profile.sex;
+    document.getElementById('selectExercise').value = profile.exercise;
+    renderProfileRestrictionChips();
+    showScreen('screenProfileForm');
+  });
+
+  // Clear Keywords Selection
+  document.getElementById('btnClearKeywords').addEventListener('click', () => {
+    selectedKeywords.clear();
+    renderCategorizedKeywords();
+  });
+
+  // Manual "Start New Day" Reset Button
+  const btnStartNewDay = document.getElementById('btnStartNewDay');
+  if (btnStartNewDay) {
+    btnStartNewDay.addEventListener('click', () => {
+      if (confirm("Start a new day? This will reset all your logged meals and consumed calories for today.")) {
+        todayMeals = [];
+        localStorage.setItem('mp_today_meals', JSON.stringify([]));
+        localStorage.setItem('mp_last_date', getTodayDateString());
+        renderDashboard();
+      }
+    });
+  }
+
+  // Random Meal Roll Button
+  document.getElementById('btnRandomMeal').addEventListener('click', rollRandomMeal);
+}
+
+// ADMIN MODAL & MANAGEMENT LOGIC
+function setupAdminModal() {
+  const modal = document.getElementById('modalAdminMenu');
+  const btnOpen = document.getElementById('btnOpenAdminModal');
+  const btnClose = document.getElementById('btnCloseAdminModal');
+
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => {
+      renderAdminMealsList();
+      modal.style.display = 'flex';
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
+
+  const formAddMeal = document.getElementById('formAddMeal');
+  if (formAddMeal) {
+    formAddMeal.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newMeal = {
+        name: document.getElementById('adminMealName').value.trim(),
+        description: document.getElementById('adminMealDesc').value.trim(),
+        calories: parseInt(document.getElementById('adminMealCal').value) || 450,
+        image_url: document.getElementById('adminMealImg').value.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
+        keywords: {
+          countries: [document.getElementById('adminMealCountry').value],
+          cooking_methods: [document.getElementById('adminMealMethod').value],
+          carbs: [document.getElementById('adminMealCarbs').value],
+          protein: [document.getElementById('adminMealProtein').value]
+        }
+      };
+
+      INITIAL_MEALS.push(newMeal);
+      
+      const storedCustom = JSON.parse(localStorage.getItem('mp_custom_meals') || '[]');
+      storedCustom.push(newMeal);
+      localStorage.setItem('mp_custom_meals', JSON.stringify(storedCustom));
+
+      alert(`Success! "${newMeal.name}" has been added to the database menu.`);
+      formAddMeal.reset();
+      renderAdminMealsList();
+    });
+  }
+}
+
+function renderAdminMealsList() {
+  const container = document.getElementById('adminMealsList');
+  const countEl = document.getElementById('adminMealCount');
+
+  if (!container) return;
+  countEl.textContent = INITIAL_MEALS.length;
+  container.innerHTML = '';
+
+  INITIAL_MEALS.forEach((meal, idx) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; background:#F9FAFB; border-radius:12px; border:1px solid #E5E7EB;';
+    item.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="${meal.image_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" />
+        <div>
+          <div style="font-weight:800; font-size:0.85rem;">${meal.name}</div>
+          <div style="font-size:0.75rem; color:#6B7280;">🔥 ${meal.calories} kcal • ${meal.keywords.countries ? meal.keywords.countries.join(', ') : ''}</div>
+        </div>
+      </div>
+      <button onclick="deleteMealFromAdmin(${idx})" style="background:#FEE2E2; border:none; color:#EF4444; border-radius:8px; padding:6px 10px; font-size:0.75rem; font-weight:800; cursor:pointer;">Delete</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function deleteMealFromAdmin(index) {
+  if (confirm(`Delete "${INITIAL_MEALS[index].name}" from menu database?`)) {
+    INITIAL_MEALS.splice(index, 1);
+    localStorage.setItem('mp_custom_meals', JSON.stringify(INITIAL_MEALS));
+    renderAdminMealsList();
+  }
+}
+
+// Master Screen Controller
+function showScreen(screenId) {
+  const screens = ['screenLogin', 'screenProfileForm', 'screenPurpose', 'screenDashboard'];
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+
+  const bottomNav = document.getElementById('bottomNav');
+  if (bottomNav) {
+    if (screenId === 'screenDashboard' || screenId === 'screenProfileForm') {
+      bottomNav.style.display = 'flex';
+    } else {
+      bottomNav.style.display = 'none';
+    }
+  }
+
+  const target = document.getElementById(screenId);
+  if (target) target.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Master Screen Switcher
-function renderApp(forceScreen = null) {
-  const screenLogin = document.getElementById('screenLogin');
-  const screenOnboarding = document.getElementById('screenOnboarding');
-  const screenHome = document.getElementById('screenHome');
-  const screenAdmin = document.getElementById('screenAdmin');
-  const screenProfile = document.getElementById('screenProfile');
-  const bottomNav = document.getElementById('bottomNav');
-  const navAdminBtn = document.getElementById('navAdmin');
+// Render Profile Dietary Restrictions Chips
+function renderProfileRestrictionChips() {
+  const categories = [
+    { key: 'allergies', id: 'profileAllergiesChips' },
+    { key: 'religious', id: 'profileReligiousChips' },
+    { key: 'ethical', id: 'profileEthicalChips' }
+  ];
 
-  [screenLogin, screenOnboarding, screenHome, screenAdmin, screenProfile].forEach(s => s.classList.remove('active'));
+  categories.forEach(cat => {
+    const container = document.getElementById(cat.id);
+    if (!container) return;
+    container.innerHTML = '';
 
-  if (!isLoggedIn || forceScreen === 'login') {
-    screenLogin.classList.add('active');
-    bottomNav.style.display = 'none';
-    return;
-  }
+    if (!profile[cat.key]) profile[cat.key] = [];
 
-  if (forceScreen === 'onboarding' || (!isOnboarded && forceScreen !== 'home')) {
-    document.getElementById('onbBirthday').value = profile.birthday || '2011-05-15';
-    document.getElementById('onbWeight').value = profile.weight || 45;
-    document.getElementById('onbHeight').value = profile.height || 157;
-    screenOnboarding.classList.add('active');
-    bottomNav.style.display = 'none';
-    return;
-  }
+    DIETARY_OPTIONS[cat.key].forEach(opt => {
+      const chip = document.createElement('div');
+      chip.className = `restriction-chip ${profile[cat.key].includes(opt) ? 'active' : ''}`;
+      chip.textContent = opt;
+      chip.addEventListener('click', () => {
+        const idx = profile[cat.key].indexOf(opt);
+        if (idx > -1) {
+          profile[cat.key].splice(idx, 1);
+          chip.classList.remove('active');
+        } else {
+          profile[cat.key].push(opt);
+          chip.classList.add('active');
+        }
+      });
+      container.appendChild(chip);
+    });
+  });
+}
 
-  bottomNav.style.display = 'flex';
+// Render Categorized Keywords List (Country, Cooking Methods, Carbs, Protein)
+function renderCategorizedKeywords() {
+  const container = document.getElementById('categorizedKeywordsContainer');
+  container.innerHTML = '';
 
-  if (currentUser && currentUser.isAdmin) {
-    navAdminBtn.style.display = 'flex';
-  } else {
-    navAdminBtn.style.display = 'none';
-  }
+  for (const [catName, tags] of Object.entries(CATEGORIZED_KEYWORDS)) {
+    const header = document.createElement('div');
+    header.className = 'keyword-category-header';
+    header.textContent = catName;
+    container.appendChild(header);
 
-  if (activeTab === 'admin' || forceScreen === 'admin') {
-    screenAdmin.classList.add('active');
-    document.getElementById('navAdmin').classList.add('active');
-    document.getElementById('navHome').classList.remove('active');
-    document.getElementById('navProfile').classList.remove('active');
-    renderAdminView();
-  } else if (activeTab === 'profile' || forceScreen === 'profile') {
-    screenProfile.classList.add('active');
-    document.getElementById('navProfile').classList.add('active');
-    document.getElementById('navHome').classList.remove('active');
-    document.getElementById('navAdmin').classList.remove('active');
-    renderProfileView();
-  } else {
-    screenHome.classList.add('active');
-    document.getElementById('navHome').classList.add('active');
-    document.getElementById('navAdmin').classList.remove('active');
-    document.getElementById('navProfile').classList.remove('active');
-    renderHomeView();
+    const grid = document.createElement('div');
+    grid.className = 'chip-wrap-grid';
+
+    tags.forEach(tag => {
+      const chip = document.createElement('div');
+      chip.className = `chip-btn ${selectedKeywords.has(tag) ? 'active' : ''}`;
+      chip.textContent = tag;
+      chip.setAttribute('data-testid', `chip-${tag.toLowerCase()}`);
+      chip.addEventListener('click', () => {
+        if (selectedKeywords.has(tag)) {
+          selectedKeywords.delete(tag);
+          chip.classList.remove('active');
+        } else {
+          selectedKeywords.add(tag);
+          chip.classList.add('active');
+        }
+      });
+      grid.appendChild(chip);
+    });
+
+    container.appendChild(grid);
   }
 }
 
-// Render Home View
-function renderHomeView() {
+// Render Main Dashboard
+function renderDashboard() {
   const calculatedAge = getAgeFromBirthday(profile.birthday);
   const tdee = calculateTDEE();
   const consumed = todayMeals.reduce((sum, m) => sum + m.calories, 0);
   const remaining = tdee - consumed;
 
-  document.getElementById('userSubtitle').textContent = `${profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1)}, ${calculatedAge} years, ${profile.weight}kg, ${profile.height}cm`;
+  const sexFormatted = profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1);
+  document.getElementById('dashSubtitle').textContent = `${sexFormatted}, ${calculatedAge} years, ${profile.weight}kg, ${profile.height}cm`;
 
-  const adminBadge = document.getElementById('adminRoleBadge');
-  if (currentUser && currentUser.isAdmin) {
-    adminBadge.style.display = 'block';
-    adminBadge.textContent = `🛡️ Logged in as Admin (${currentUser.email})`;
-  } else {
-    adminBadge.style.display = 'none';
+  // Toggle Admin Badge
+  const adminBadge = document.getElementById('adminHeaderBadge');
+  if (adminBadge) {
+    adminBadge.style.display = isAdmin() ? 'flex' : 'none';
   }
 
-  document.getElementById('valNeed').textContent = tdee;
-  document.getElementById('valConsumed').textContent = consumed;
-  document.getElementById('valRemaining').textContent = remaining;
+  const bentoContainer = document.getElementById('bentoContainer');
+  const dashTitle = document.getElementById('dashTitle');
+
+  if (mode === 'diet') {
+    dashTitle.textContent = "Diet Planning";
+    bentoContainer.style.display = 'block';
+    document.getElementById('valNeed').textContent = tdee;
+    document.getElementById('valConsumed').textContent = consumed;
+    document.getElementById('valRemaining').textContent = remaining;
+  } else {
+    dashTitle.textContent = "Random Meal Generator";
+    bentoContainer.style.display = 'none';
+  }
 
   renderTodayMealsList();
-}
-
-// Keywords Chips
-function renderKeywordsChips() {
-  const categories = {
-    countries: ["Thai", "Japanese", "Chinese", "Korean", "Indian", "Vietnamese", "Laos", "Lebanon", "Mexican", "Italian", "French", "Spanish", "American", "Nordic", "German", "British"],
-    cooking_methods: ["Fry", "Boil", "Grill", "Bake", "Steam", "Stir-Fry", "Stew", "Smoke"],
-    carbs: ["Noodles", "Rice", "Bread", "Pasta", "Low-Carbs"],
-    protein: ["Chicken", "Egg", "Pork", "Beef", "Fish", "Seafood", "Tofu"]
-  };
-
-  const container = document.getElementById('keywordChipsContainer');
-  container.innerHTML = '';
-
-  for (const [cat, tags] of Object.entries(categories)) {
-    const title = document.createElement('div');
-    title.className = 'chip-group-title';
-    title.textContent = cat.replace('_', ' ');
-    container.appendChild(title);
-
-    const flex = document.createElement('div');
-    flex.className = 'chip-flex';
-
-    tags.forEach(tag => {
-      const lower = tag.toLowerCase();
-      const chip = document.createElement('div');
-      chip.className = `chip ${activeKeywords[cat].includes(lower) ? 'active' : ''}`;
-      chip.textContent = tag;
-      chip.addEventListener('click', () => {
-        const idx = activeKeywords[cat].indexOf(lower);
-        if (idx > -1) {
-          activeKeywords[cat].splice(idx, 1);
-          chip.classList.remove('active');
-        } else {
-          activeKeywords[cat].push(lower);
-          chip.classList.add('active');
-        }
-      });
-      flex.appendChild(chip);
-    });
-
-    container.appendChild(flex);
-  }
 }
 
 // Roll Random Meal
 function rollRandomMeal() {
   let pool = INITIAL_MEALS;
 
-  const hasFilter = Object.values(activeKeywords).some(arr => arr.length > 0);
-  if (hasFilter) {
+  if (selectedKeywords.size > 0) {
+    const selectedArr = Array.from(selectedKeywords).map(k => k.toLowerCase());
     pool = pool.filter(meal => {
-      for (const [cat, selected] of Object.entries(activeKeywords)) {
-        if (selected.length > 0) {
-          const mealTags = meal.keywords[cat] || [];
-          const match = selected.some(s => mealTags.includes(s));
-          if (!match) return false;
-        }
-      }
-      return true;
+      const allMealTags = [
+        ...(meal.keywords.countries || []),
+        ...(meal.keywords.cooking_methods || []),
+        ...(meal.keywords.carbs || []),
+        ...(meal.keywords.protein || [])
+      ].map(t => t.toLowerCase());
+
+      return selectedArr.some(sel => allMealTags.includes(sel) || meal.name.toLowerCase().includes(sel) || meal.description.toLowerCase().includes(sel));
     });
   }
 
   if (pool.length === 0) pool = INITIAL_MEALS;
-
   const picked = pool[Math.floor(Math.random() * pool.length)];
 
   const box = document.getElementById('yourMealBox');
   box.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
       <div>
         <div style="font-weight:900; font-size:1.25rem;">${picked.name}</div>
-        <div style="font-size:0.85rem; color:#6B7280; margin-top:2px;">${picked.description}</div>
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">${picked.description}</div>
       </div>
-      <button id="btnRandomMeal" class="btn-orange" style="width:auto; padding:10px 18px; font-size:0.85rem;">🔀 Random Meal</button>
+      <button id="btnRandomMeal" class="btn-purple" style="width:auto; padding:10px 18px; font-size:0.85rem; border-radius:14px;" data-testid="btn-re-randomize">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+        <span>Random Meal</span>
+      </button>
     </div>
 
-    <img src="${picked.image_url}" style="width:100%; height:160px; object-fit:cover; border-radius:18px; margin-bottom:14px;" alt="" />
+    <img src="${picked.image_url}" style="width:100%; height:180px; object-fit:cover; border-radius:16px; margin-bottom:14px;" alt="" />
 
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <span style="font-weight:900; color:var(--orange-primary); font-size:1.1rem;">🔥 ${picked.calories} kcal</span>
-      <button class="btn-orange" style="width:auto; padding:8px 16px; font-size:0.8rem;" onclick="addMealToToday('${picked.name}', ${picked.calories}, '${picked.image_url}')">➕ Add to Today</button>
+      <button class="btn-purple" style="width:auto; padding:8px 18px; font-size:0.85rem;" onclick="addMealToToday('${picked.name}', ${picked.calories}, '${picked.image_url}')" data-testid="btn-add-today">➕ Add to Today</button>
     </div>
   `;
 
@@ -327,7 +524,7 @@ function addMealToToday(name, calories, img) {
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   });
   localStorage.setItem('mp_today_meals', JSON.stringify(todayMeals));
-  renderHomeView();
+  renderDashboard();
 }
 
 function renderTodayMealsList() {
@@ -335,8 +532,8 @@ function renderTodayMealsList() {
 
   if (todayMeals.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding: 20px 0; color:#888888;">
-        <div style="font-weight:800; font-size:1.05rem; color:#111827; margin-bottom:4px;">No meals added yet</div>
+      <div style="text-align:center; padding: 24px 0; color:#9CA3AF;">
+        <div style="font-weight:600; font-size:0.95rem; color:#6B7280; margin-bottom:4px;">No meals added yet</div>
         <div style="font-size:0.85rem;">Add meals to track your daily intake</div>
       </div>
     `;
@@ -346,16 +543,16 @@ function renderTodayMealsList() {
   container.innerHTML = '';
   todayMeals.forEach((meal, idx) => {
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #F3F4F6;';
+    div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #F3F4F6;';
     div.innerHTML = `
-      <div style="display:flex; align-items:center; gap:10px;">
-        <img src="${meal.image_url}" style="width:40px; height:40px; border-radius:12px; object-fit:cover;" />
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="${meal.image_url}" style="width:44px; height:44px; border-radius:12px; object-fit:cover;" />
         <div>
           <div style="font-weight:800; font-size:0.9rem;">${meal.name}</div>
-          <div style="font-size:0.75rem; color:#888888;">${meal.time} • ${meal.calories} kcal</div>
+          <div style="font-size:0.8rem; color:#6B7280;">${meal.time} • ${meal.calories} kcal</div>
         </div>
       </div>
-      <button onclick="removeTodayMeal(${idx})" style="background:transparent; border:none; color:#EF4444; font-size:0.9rem; cursor:pointer; font-weight:800;">✕</button>
+      <button onclick="removeTodayMeal(${idx})" style="background:none; border:none; color:#EF4444; font-size:1rem; cursor:pointer; font-weight:800; padding:4px;">✕</button>
     `;
     container.appendChild(div);
   });
@@ -364,198 +561,5 @@ function renderTodayMealsList() {
 function removeTodayMeal(index) {
   todayMeals.splice(index, 1);
   localStorage.setItem('mp_today_meals', JSON.stringify(todayMeals));
-  renderHomeView();
-}
-
-// ADMIN MENU MANAGEMENT
-function renderAdminView(query = '') {
-  const container = document.getElementById('adminCatalogContainer');
-  container.innerHTML = '';
-
-  const searchInput = document.getElementById('adminSearchInput');
-  if (searchInput) {
-    searchInput.oninput = (e) => renderAdminView(e.target.value.toLowerCase());
-  }
-
-  const filtered = INITIAL_MEALS.filter(m => 
-    m.name.toLowerCase().includes(query) || 
-    m.description.toLowerCase().includes(query)
-  );
-
-  filtered.forEach(meal => {
-    const card = document.createElement('div');
-    card.className = 'white-card';
-    card.style.padding = '16px';
-    card.style.marginBottom = '14px';
-    card.innerHTML = `
-      <div style="display:flex; gap:12px; margin-bottom:12px;">
-        <img src="${meal.image_url}" style="width:70px; height:70px; border-radius:14px; object-fit:cover;" />
-        <div style="flex:1;">
-          <div style="font-weight:900; font-size:1.05rem;">${meal.name}</div>
-          <div style="font-size:0.8rem; color:#6B7280; margin-top:2px; height:36px; overflow:hidden;">${meal.description}</div>
-          <div style="font-size:0.8rem; font-weight:800; color:var(--orange-primary); margin-top:4px;">🔥 ${meal.calories} kcal • 🥩 ${meal.protein_g}g Prot • 🍚 ${meal.carbs_g}g Carb</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-orange" style="flex:1; padding:8px; font-size:0.8rem;" onclick="openEditMealModal('${meal.id}')">✏️ Edit Recipe</button>
-        <button class="btn-white-pill" style="flex:1; padding:8px; font-size:0.8rem; color:#EF4444; border-color:#FEE2E2;" onclick="deleteMeal('${meal.id}')">🗑️ Delete</button>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-function handleAddMeal(e) {
-  e.preventDefault();
-  const name = document.getElementById('addMealName').value;
-  const desc = document.getElementById('addMealDesc').value;
-  const img = document.getElementById('addMealImg').value || 'https://images.unsplash.com/photo-1546069901-eacef0df6022?w=800&q=80';
-  const cal = parseFloat(document.getElementById('addMealCal').value) || 400;
-  const prot = parseFloat(document.getElementById('addMealProt').value) || 24;
-  const fat = parseFloat(document.getElementById('addMealFat').value) || 12;
-  const carb = parseFloat(document.getElementById('addMealCarb').value) || 45;
-
-  const newMeal = {
-    id: "m_" + Date.now(),
-    name, description: desc, image_url: img,
-    calories: cal, protein_g: prot, fat_g: fat, carbs_g: carb,
-    keywords: { countries: ["thai"], cooking_methods: ["grill"], carbs: ["rice"], protein: ["chicken"] },
-    dietary_tags: ["halal"], allergens: [], low_fat: fat <= 10
-  };
-
-  INITIAL_MEALS.unshift(newMeal);
-  renderAdminView();
-  document.getElementById('formAdminAddMeal').reset();
-  alert('✨ New recipe added to menu catalog!');
-}
-
-function openEditMealModal(id) {
-  const meal = INITIAL_MEALS.find(m => m.id === id);
-  if (!meal) return;
-
-  editingMealId = id;
-  document.getElementById('editMealName').value = meal.name;
-  document.getElementById('editMealDesc').value = meal.description;
-  document.getElementById('editMealImg').value = meal.image_url;
-  document.getElementById('editMealCal').value = meal.calories;
-  document.getElementById('editMealProt').value = meal.protein_g;
-  document.getElementById('editMealFat').value = meal.fat_g;
-  document.getElementById('editMealCarb').value = meal.carbs_g;
-
-  document.getElementById('modalEditMeal').style.display = 'flex';
-}
-
-function closeEditModal() {
-  document.getElementById('modalEditMeal').style.display = 'none';
-}
-
-function handleSaveEditedMeal(e) {
-  e.preventDefault();
-  const meal = INITIAL_MEALS.find(m => m.id === editingMealId);
-  if (meal) {
-    meal.name = document.getElementById('editMealName').value;
-    meal.description = document.getElementById('editMealDesc').value;
-    meal.image_url = document.getElementById('editMealImg').value;
-    meal.calories = parseFloat(document.getElementById('editMealCal').value) || meal.calories;
-    meal.protein_g = parseFloat(document.getElementById('editMealProt').value) || meal.protein_g;
-    meal.fat_g = parseFloat(document.getElementById('editMealFat').value) || meal.fat_g;
-    meal.carbs_g = parseFloat(document.getElementById('editMealCarb').value) || meal.carbs_g;
-
-    renderAdminView();
-    closeEditModal();
-    alert('✅ Recipe updated successfully!');
-  }
-}
-
-function deleteMeal(id) {
-  if (confirm('Are you sure you want to delete this recipe from the catalog?')) {
-    const idx = INITIAL_MEALS.findIndex(m => m.id === id);
-    if (idx > -1) {
-      INITIAL_MEALS.splice(idx, 1);
-      renderAdminView();
-    }
-  }
-}
-
-// Onboarding Exercise Selector
-function renderOnboardingExerciseGrid() {
-  const grid = document.getElementById('onboardingExerciseGrid');
-  grid.innerHTML = '';
-  for (let i = 0; i <= 7; i++) {
-    const btn = document.createElement('div');
-    btn.className = `num-btn ${profile.exercise_week === i ? 'active' : ''}`;
-    btn.textContent = i;
-    btn.addEventListener('click', () => {
-      profile.exercise_week = i;
-      renderOnboardingExerciseGrid();
-    });
-    grid.appendChild(btn);
-  }
-}
-
-// Profile View Render with Height & Weight Editing
-function renderProfileView() {
-  document.getElementById('profSex').value = profile.sex || 'female';
-  document.getElementById('profBirthday').value = profile.birthday || '2011-05-15';
-  document.getElementById('profWeight').value = profile.weight || 45;
-  document.getElementById('profHeight').value = profile.height || 157;
-
-  const grid = document.getElementById('exerciseNumGrid');
-  grid.innerHTML = '';
-  for (let i = 0; i <= 7; i++) {
-    const btn = document.createElement('div');
-    btn.className = `num-btn ${profile.exercise_week === i ? 'active' : ''}`;
-    btn.textContent = i;
-    btn.addEventListener('click', () => {
-      profile.exercise_week = i;
-      renderProfileView();
-    });
-    grid.appendChild(btn);
-  }
-}
-
-function renderProfileChips() {
-  const dietaryList = ["Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Nut-Free", "Halal", "Kosher"];
-  const allergyList = ["Nuts", "Dairy", "Gluten", "Shellfish", "Egg", "Soy"];
-
-  const containerDiet = document.getElementById('dietaryChipsContainer');
-  containerDiet.innerHTML = '';
-  dietaryList.forEach(item => {
-    const chip = document.createElement('div');
-    chip.className = `chip ${profile.dietary.includes(item) ? 'active' : ''}`;
-    chip.textContent = item;
-    chip.addEventListener('click', () => {
-      const idx = profile.dietary.indexOf(item);
-      if (idx > -1) profile.dietary.splice(idx, 1);
-      else profile.dietary.push(item);
-      chip.classList.toggle('active');
-    });
-    containerDiet.appendChild(chip);
-  });
-
-  const containerAllergy = document.getElementById('allergyChipsContainer');
-  containerAllergy.innerHTML = '';
-  allergyList.forEach(item => {
-    const chip = document.createElement('div');
-    chip.className = `chip ${profile.allergies.includes(item) ? 'active' : ''}`;
-    chip.textContent = item;
-    chip.addEventListener('click', () => {
-      const idx = profile.allergies.indexOf(item);
-      if (idx > -1) profile.allergies.splice(idx, 1);
-      else profile.allergies.push(item);
-      chip.classList.toggle('active');
-    });
-    containerAllergy.appendChild(chip);
-  });
-}
-
-function saveProfileChanges() {
-  profile.sex = document.getElementById('profSex').value;
-  profile.birthday = document.getElementById('profBirthday').value || '2011-05-15';
-  profile.weight = parseFloat(document.getElementById('profWeight').value) || profile.weight;
-  profile.height = parseFloat(document.getElementById('profHeight').value) || profile.height;
-  
-  localStorage.setItem('mp_user_profile', JSON.stringify(profile));
-  alert('✨ Profile changes saved! Your daily calorie budget has been recalculated.');
-  switchTab('home');
+  renderDashboard();
 }
